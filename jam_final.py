@@ -68,28 +68,24 @@ def new_wave():
     amount = round(wave_count + 0.5 / 2)  # + 0.5 because the wave counter is always behind
     while amount != 0:
         amount -= 1
-        point = spawnpoint()
         if amount % 2 == 0 and amount != 0:
             # Create a missile boat (mb) every third wave. Increases difficulty
             point = spawnpoint()
-            sprites.append(Enemy(point, ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship', mb=True))
-            # sprites.append(Friendly(point, ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship'))
+            sprites.append(Enemy(point, ['images/ship_enemy_mb.png'], (-1, -1), 1, 'enemy_ship', random.randrange(-180, 180), mb=True))
         if amount % 3 == 0 and amount != 0:
             # Create reinforcements
-            print('friendly ship')
-            new_point = player.x - 100, player.y - 100
-            sprites.append(Friendly(new_point, ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship'))
+            new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
+            sprites.append(Friendly(new_point, ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180)))
         if amount % 6 == 0 and amount != 0:
-            print('friendly missile boat')
-            new_point = player.x + 100, player.y + 100
-            sprites.append(Friendly(new_point, ['images/ship_friendly_mb.png'], (-2, -2), 1, 'friendly_ship', mb=True))
+            new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
+            sprites.append(Friendly(new_point, ['images/ship_friendly_mb.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180), mb=True))
         else:
-            sprites.append(Enemy(point, ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship'))
+            point = spawnpoint()
+            sprites.append(Enemy(point, ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship', random.randrange(-180, 180)))
 
 
 def new_powerup():
     point = spawnpoint()
-    # For people using pycharm ,
     powerup = AnimSprite(point, ['images/missile_powerup.png'], (0, 0), 1, 'powerup', 0, None)
     powerup.collide = False
     sprites.append(powerup)
@@ -368,7 +364,6 @@ while not closed:
 
     pygame.display.update()
     pygame.draw.rect(display, (24, 24, 24), pygame.Rect(0, 0, 1280, 720))  # Background colour
-    pygame.draw.rect(display, (180, 180, 180), pygame.Rect(0, 500, 1280, 20))
 
     # Used for debugging
     # text = font.render(f'X:{round(player.x, 2)}, Y:{round(player.y, 2)}, Angle:{player.facing}', True, (200, 200, 200))
@@ -398,6 +393,7 @@ while not closed:
         if event.type == pygame.QUIT:
             closed = True
             print('GAME OVER')
+            print(f'You reached wave {wave_count}')
             print(f'Your final score is: {score}')
             pygame.quit()
             quit()
@@ -502,6 +498,7 @@ while not closed:
         pygame.display.quit()
         closed = True
         print('GAME OVER')
+        print(f'You reached wave {wave_count}')
         print(f'Your final score is: {score}')
         quit()
 
