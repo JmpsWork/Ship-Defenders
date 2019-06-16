@@ -52,25 +52,18 @@ Wave 12 wil have 12 enemy ships, 4 enemy missile boats, 3 allied ships, and 1 al
 
 **Enemy Ship**
 
-Your standard enemy ship. Every 2 seconds, they fire a fast moving red bullet. When said bullet comes in to contact with any friendly ship or projectile, it destroys itself and whatever it hit. They are easy to destroy, as 1 shot kills them instantly. They will spawn far away from the player, facing a random direction. Every enemy ship has a dark gray hull, and a red glass cockpit.
-
-![Enemy Ship](/images/ship_idle_enemy.png)  ![Enemy Bullet](/images/bullet_enemy.png)
+![Enemy Ship](/images/ship_idle_enemy.png)  ![Enemy Bullet](/images/bullet_enemy.png) Your standard enemy ship. Every 2 seconds, they fire a fast moving red bullet. When said bullet comes in to contact with any friendly ship or projectile, it destroys itself and whatever it hit. They are easy to destroy, as 1 shot kills them instantly. They will spawn far away from the player, facing a random direction. Every enemy ship has a dark gray hull, and a red glass cockpit.
 
 **Enemy Missile Boat (MB)**
 
-This enemy ship is twice as slow as a regular enemy. As the name suggests, they fire missiles instead of bullets. They have a fire rate that's twice as slow as regular enemy ships, which means they shoot every 4 seconds. The missiles they fire are fast, and faster than the player, but turn slowly. Use this to your advantage by out maneuvering their missiles! The missiles can be shot down with a precise shot, or until they die after 12 seconds of flying around. They have a bulky, fat appearence, with the same dark gray hull and red glass cockpit.
-
-![Enemy Missile Boat](/images/ship_enemy_mb.png)  ![Enemy Missile](/images/ship_missile_enemy.png)
+![Enemy Missile Boat](/images/ship_enemy_mb.png)  ![Enemy Missile](/images/ship_missile_enemy.png) This enemy ship is twice as slow as a regular enemy. As the name suggests, they fire missiles instead of bullets. They have a fire rate that's twice as slow as regular enemy ships, which means they shoot every 4 seconds. The missiles they fire are fast, and faster than the player, but turn slowly. Use this to your advantage by out maneuvering their missiles! The missiles can be shot down with a precise shot, or until they die after 12 seconds of flying around. They have a bulky, fat appearence, with the same dark gray hull and red glass cockpit.
 
 **Friendly Ship**
 
-Allied ships will apear starting from wave 4. They will attack the nearest enemy, even if it means ramming in to them, which destroys them both. Their friendly projectiles do no damage to the player. Allied ships will spawn anywhere near the player, instead of far away from the player, but they will face a random direction. Other than being friendly, they are identical to their enemy counterparts. They have a light gray hull, and a lime green cockpit.
-
-![Friendly Ship](/images/ship_idle_ally.png)  ![Bullet](/images/bullet.png)
-
-Allied missile boats start appearing at wave 7, and onwards. They will attack the nearest enemy. They are identical in strength to their enemy counterparts, with the exception of being friendly and their projectiles being friendly. They are bulky, fat, and have a light gray hull, with a lime green cockpit.
+![Friendly Ship](/images/ship_idle_ally.png)  ![Bullet](/images/bullet.png) Allied ships will apear starting from wave 4. They will attack the nearest enemy, even if it means ramming in to them, which destroys them both. Their friendly projectiles do no damage to the player. Allied ships will spawn anywhere near the player, instead of far away from the player, but they will face a random direction. Other than being friendly, they are identical to their enemy counterparts. They have a light gray hull, and a lime green cockpit.
 
 ![Friendly Missile Boat](/images/ship_friendly_mb.png)  ![Missile](/images/ship_missile.png)
+ Allied missile boats start appearing at wave 7, and onwards. They will attack the nearest enemy. They are identical in strength to their enemy counterparts, with the exception of being friendly and their projectiles being friendly. They are bulky, fat, and have a light gray hull, with a lime green cockpit.
 
 
 ### Powerups
