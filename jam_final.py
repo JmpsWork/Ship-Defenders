@@ -15,11 +15,12 @@ pygame.display.init()
 pygame.mixer.init()
 
 clock = pygame.time.Clock()
-size = (1280, 720)
+size = (1680, 1050)
 display = pygame.display.set_mode(size)
 
-CENTER = 1280 / 2, 720 / 2
+CENTER = size[0] / 2, size[1] / 2
 FPS = 60
+pygame.display.set_mode(size, pygame.FULLSCREEN)
 
 sprites = []
 
@@ -27,7 +28,10 @@ pygame.font.init()
 # font = pygame.font.SysFont('Comic Sans MS', 20)  Meant for debugging player position
 score_font = pygame.font.SysFont('System Bold', 30)
 wave_font = pygame.font.SysFont('System Bold', 30)
+game_over_font1 = pygame.font.SysFont('System Bold', 85)
+game_over_font2 = pygame.font.SysFont('System Bold', 55)
 score = 0
+score_counter = 0  # Used for game over, to create the score counting effect
 
 missiles = 3
 wave_count = 0
@@ -38,19 +42,15 @@ powerup_counter = 0
 rotate_left = False
 rotate_right = False
 
+end = False
+
 pygame.display.set_caption('Jam #1')
 
 
-def within(bbox: tuple, other_bbox: tuple) -> bool:
-    # This function is pretty wonky, if anybody could fix it up, that would be great
-    # It uses the Axis Aligned Bounding Box method (hence the name, bbox)
-    # 0: X, 1: Y, 2: WIDTH, 3: HEIGHT
-    t_bbox = bbox[0], bbox[1], bbox[0] - bbox[2], bbox[1] - bbox[3]
-    t_other_bbox = other_bbox[0], other_bbox[1], other_bbox[0] - other_bbox[2], other_bbox[1] - other_bbox[3]
-    if t_bbox[0] < t_other_bbox[0] + t_other_bbox[2] and t_bbox[0] + t_bbox[2] > t_other_bbox[0] and \
-            t_bbox[1] < t_other_bbox[1] + t_other_bbox[3] and t_bbox[1] + t_bbox[3] > t_other_bbox[1]:
-        return True
-    return False
+def within(bbox: tuple, other_bbox: tuple):
+    within_x = bbox[0] + bbox[1] >= other_bbox[0] and other_bbox[0] + other_bbox[1] >= bbox[0]
+    within_y = bbox[2] + bbox[3] >= other_bbox[2] and other_bbox[2] + other_bbox[3] >= bbox[2]
+    return within_x and within_y
 
 
 def spawnpoint() -> tuple:  # If the game opens and crashes afterwards, look here
@@ -73,10 +73,11 @@ def new_wave():
             point = spawnpoint()
             sprites.append(Enemy(point, ['images/ship_enemy_mb.png'], (-1, -1), 1, 'enemy_ship', random.randrange(-180, 180), mb=True))
         if amount % 3 == 0 and amount != 0:
-            # Create reinforcements
+            # Create reinforcements every 4th wave
             new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
             sprites.append(Friendly(new_point, ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180)))
         if amount % 6 == 0 and amount != 0:
+            # Create a friendly missile boat every 7th wave
             new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
             sprites.append(Friendly(new_point, ['images/ship_friendly_mb.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180), mb=True))
         else:
@@ -106,7 +107,7 @@ class Sprite:
 
     @property
     def bbox(self):
-        return self.x, self.y, self.x-self.size[0], self.y-self.size[1]
+        return self.x, self.size[0], self.y, self.size[1]
 
     def draw(self, move: bool=True):
         # screen being display
@@ -239,7 +240,7 @@ class Projectile(AnimSprite):  # Projectile have a
     def face(self, other):
         """We override the face method so that it faces based on relative position, not absolute position
         Essentially, we want to avoid the missile suddenly jumping when the player reaches the top of the screen.
-        We do this by checking if the player's position is >< than half the screen"""
+        We do this by checking if the other entity's position is >< than half the screen"""
         other_x = other.x
         other_y = other.y
         if self.x + size[0] / 2 < other.x:
@@ -335,11 +336,6 @@ class Friendly(AnimSprite):
 
 
 player = AnimSprite(CENTER, ['images/ship_idle.png'], (0, 0), 1, 'player', 0)
-# powerup = AnimSprite((200, 200), ['images/missile_powerup.png'], (0, 0), 1, 'powerup', 0, None)
-# None is so it doesn't get targeted by enemies and allies
-
-# enemy = Enemy((200, 200), ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship')
-# enemy2 = Enemy((400, 400), ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship')
 
 missile1 = Sprite((size[0] - 100, 40), 'images/ship_missile.png', (0, 0))
 missile2 = Sprite((size[0] - 80, 40), 'images/ship_missile.png', (0, 0))
@@ -347,13 +343,6 @@ missile3 = Sprite((size[0] - 60, 40), 'images/ship_missile.png', (0, 0))
 missile1.collide = False
 missile2.collide = False
 missile3.collide = False
-
-# friendly = Friendly((600, 600), ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship')
-
-# sprites.append(enemy)  # Dummy enemies
-# sprites.append(enemy2)
-# sprites.append(powerup)
-# sprites.append(friendly)
 
 
 sprites.append(player)
@@ -363,7 +352,7 @@ new_wave()
 while not closed:
 
     pygame.display.update()
-    pygame.draw.rect(display, (24, 24, 24), pygame.Rect(0, 0, 1280, 720))  # Background colour
+    pygame.draw.rect(display, (24, 24, 24), pygame.Rect(0, 0, size[0], size[1]))  # Background colour
 
     # Used for debugging
     # text = font.render(f'X:{round(player.x, 2)}, Y:{round(player.y, 2)}, Angle:{player.facing}', True, (200, 200, 200))
@@ -373,17 +362,18 @@ while not closed:
         wave_text_color = (200, 40, 40)
     wave_text = wave_font.render(f'Current Wave: {wave_count}', True, wave_text_color)
 
-    powerup_counter += 1
+    if not end:
+        powerup_counter += 1
 
-    if missiles >= 3:  # Missile counter
-        missile3.draw(False)
-        missile2.draw(False)
-        missile1.draw(False)
-    elif missiles == 2:
-        missile2.draw(False)
-        missile1.draw(False)
-    elif missiles == 1:
-        missile1.draw(False)
+        if missiles >= 3:  # Missile counter
+            missile3.draw(False)
+            missile2.draw(False)
+            missile1.draw(False)
+        elif missiles == 2:
+            missile2.draw(False)
+            missile1.draw(False)
+        elif missiles == 1:
+            missile1.draw(False)
 
     if powerup_counter >= powerup_count:
         new_powerup()
@@ -399,11 +389,11 @@ while not closed:
             quit()
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_a:
-                rotate_left = True
-                player.rotate(1)
-
             if player.die is False:
+                if event.key == pygame.K_a:
+                    rotate_left = True
+                    player.rotate(1)
+
                 if event.key == pygame.K_d:
                     rotate_right = True
                     player.rotate(-1)
@@ -438,13 +428,21 @@ while not closed:
                 if event.key == pygame.K_w:
                     player.set_velocity(0, 0)
 
+            if event.key == pygame.K_ESCAPE:
+                closed = True
+                print('GAME OVER')
+                print(f'You reached wave {wave_count}')
+                print(f'Your final score is: {score}')
+                pygame.quit()
+                quit()
+
     if rotate_left:
         player.rotate(-2)
 
     elif rotate_right:
         player.rotate(2)
 
-    if sprites:
+    if sprites and not end:
         for index, sprite in enumerate(sprites):
             if sprite.collide is True:
 
@@ -480,8 +478,9 @@ while not closed:
                 if sprite.shot == 'enemy_ship':
                     explode = pygame.mixer.Sound(f'sounds/explode{random.randrange(1, 5)}.wav')
                     explode.play()
-                    score += 600
-                elif sprite.shot == 'enemy_missile':
+                    if player.die is False:
+                        score += 600
+                elif sprite.shot == 'enemy_missile' and player.die is False:
                     score += 100
                 elif sprite.shot == 'friendly_ship':
                     explode = pygame.mixer.Sound(f'sounds/explode{random.randrange(1, 5)}.wav')
@@ -493,17 +492,44 @@ while not closed:
                 new_wave()
 
     if player.die is True:
-        death = pygame.mixer.Sound(f'sounds/explode{random.randrange(1, 5)}.wav')
-        death.play()
-        pygame.display.quit()
-        closed = True
-        print('GAME OVER')
-        print(f'You reached wave {wave_count}')
-        print(f'Your final score is: {score}')
-        quit()
+        if not end:
+            death = pygame.mixer.Sound('sounds/explode1.wav')
+            death.play()
+        end = True
+        if score_counter < score:
+            score_counter += 1111
+        else:
+            score_counter = score
 
-    # player.draw()
-    # display.blit(text, (40, 40))
+        game_over_text1 = game_over_font1.render('GAME OVER', True, (200, 20, 20))
+        game_over_text2 = game_over_font2.render(f'You reached wave {wave_count}', True, (200, 200, 200))
+        game_over_text3 = game_over_font2.render(f'Your final score is {score_counter} points', True, (200, 200, 200))
+        rect1 = game_over_text1.get_rect(center=(CENTER[0], CENTER[1] - 100))
+        rect2 = game_over_text2.get_rect(center=CENTER)
+        rect3 = game_over_text3.get_rect(center=(CENTER[0], CENTER[1] + 100))
+        display.blit(game_over_text1, rect1)
+        display.blit(game_over_text2, rect2)
+        display.blit(game_over_text3, rect3)
+
+        if sprites:
+            for index, sprite in enumerate(sprites):
+                if sprite.shot != 'player':
+                    if sprite.collide is True:
+                        for other_index, other_sprite in enumerate(sprites):
+                            if other_index != index:
+                                if within(other_sprite.bbox, sprite.bbox) and (sprite.friendly is not other_sprite.friendly):
+                                    sprite.die = True
+                                    other_sprite.die = True
+                sprite.draw()
+                sprite_num = len(sprites)
+                if sprite_num - index < 0:
+                    sprite.gradual_face(sprites[sprite_num + index])
+                elif sprite_num + index > sprite_num:
+                    sprite.gradual_face(sprites[sprite_num - index])
+
+                if sprite.die is True:
+                    sprites.pop(index)
+
     display.blit(score_text, (40, 80))
     display.blit(wave_text, (40, 40))
 
