@@ -5,10 +5,16 @@ The highest score I've ever gotten was 1055800, when I reached wave 51.
 
 ### Controls
 W: Forward
+
 A: Turn left
+
 D: Turn right
+
 SPACEBAR: Shoot bullets
+
 E: Shoot missiles, if you have any
+
+ESCAPE: Exit the game.
 
 
 ## GAME MECHANICS
@@ -20,11 +26,7 @@ The playable space is a large, open area. Any projectile or ship that goes beyon
 
 ### The Player
 
-The player is a fast moving ship, that can shoot a large amount of bullets, and missiles, if the player has any. The player can obtain more missiles from their starting 3 missiles from powerups that appear randomly on the map.
-
-![The Player](/images/ship_idle.png)
-![Bullet](/images/bullet.png)
-![Missile](/images/ship_missile.png)
+![The Player](/images/ship_idle.png)  ![Bullet](/images/bullet.png)  ![Missile](/images/ship_missile.png) The player is a fast moving ship, that can shoot a large amount of bullets, and missiles, if the player has any. The player can obtain more missiles from their starting 3 missiles from powerups that appear randomly on the map.
 
 
 ### Waves
@@ -69,9 +71,7 @@ Wave 12 wil have 12 enemy ships, 4 enemy missile boats, 3 allied ships, and 1 al
 ### Powerups
 
 
-Every 20 seconds in the game, a power up will spawn anywhere on the map, that is far away from the player. When it collides with the player, it will be picked up, and the player will receive 1 additional missile that they can use.
-
-![Powerup](/images/missile_powerup.png)
+![Powerup](/images/missile_powerup.png) Every 20 seconds in the game, a power up will spawn anywhere on the map, that is far away from the player. When it collides with the player, it will be picked up, and the player will receive 1 additional missile that they can use.
 
 
 ### Score
