@@ -7,7 +7,6 @@ import pygame
 import math  # for angles and stuff
 import random  # For random spawnpoints
 
-
 closed = False
 
 pygame.init()
@@ -43,11 +42,25 @@ rotate_left = False
 rotate_right = False
 
 end = False
-
 pygame.display.set_caption('Jam #1')
+
+# Everything is loaded only once and not during runtime, improves performance
+images = {
+    'ship':  pygame.image.load('images/ship_idle.png').convert_alpha(),
+    'ship_enemy': pygame.image.load('images/ship_idle_enemy.png').convert_alpha(),
+    'ship_enemy_mb': pygame.image.load('images/ship_enemy_mb.png').convert_alpha(),
+    'ship_ally': pygame.image.load('images/ship_idle_ally.png').convert_alpha(),
+    'ship_ally_mb': pygame.image.load('images/ship_friendly_mb.png').convert_alpha(),
+    'missile': pygame.image.load('images/missile_powerup.png').convert_alpha(),
+    'missile_enemy': pygame.image.load('images/ship_missile_enemy.png').convert_alpha(),
+    'missile_powerup': pygame.image.load('images/missile_powerup.png').convert_alpha(),
+    'bullet': pygame.image.load('images/bullet.png').convert_alpha(),
+    'bullet_enemy': pygame.image.load('images/bullet_enemy.png').convert_alpha(),
+}
 
 
 def within(bbox: tuple, other_bbox: tuple):
+    # A bbox is: self.x, self.size[0], self.y, self.size[1]
     within_x = bbox[0] + bbox[1] >= other_bbox[0] and other_bbox[0] + other_bbox[1] >= bbox[0]
     within_y = bbox[2] + bbox[3] >= other_bbox[2] and other_bbox[2] + other_bbox[3] >= bbox[2]
     return within_x and within_y
@@ -71,35 +84,35 @@ def new_wave():
         if amount % 2 == 0 and amount != 0:
             # Create a missile boat (mb) every third wave. Increases difficulty
             point = spawnpoint()
-            sprites.append(Enemy(point, ['images/ship_enemy_mb.png'], (-1, -1), 1, 'enemy_ship', random.randrange(-180, 180), mb=True))
+            sprites.append(Enemy(point, [images['ship_enemy_mb']], (-1, -1), 1, 'enemy_ship', random.randrange(-180, 180), mb=True))
         if amount % 3 == 0 and amount != 0:
             # Create reinforcements every 4th wave
             new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
-            sprites.append(Friendly(new_point, ['images/ship_idle_ally.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180)))
+            sprites.append(Friendly(new_point, [images['ship_ally']], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180)))
         if amount % 6 == 0 and amount != 0:
             # Create a friendly missile boat every 7th wave
             new_point = player.x + random.randrange(-100, 100), player.y + random.randrange(-100, 100)
-            sprites.append(Friendly(new_point, ['images/ship_friendly_mb.png'], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180), mb=True))
+            sprites.append(Friendly(new_point, [images['ship_ally_mb']], (-2, -2), 1, 'friendly_ship', random.randrange(-180, 180), mb=True))
         else:
             point = spawnpoint()
-            sprites.append(Enemy(point, ['images/ship_idle_enemy.png'], (-2, -2), 1, 'enemy_ship', random.randrange(-180, 180)))
+            sprites.append(Enemy(point, [images['ship_enemy']], (-2, -2), 1, 'enemy_ship', random.randrange(-180, 180)))
 
 
 def new_powerup():
     point = spawnpoint()
-    powerup = AnimSprite(point, ['images/missile_powerup.png'], (0, 0), 1, 'powerup', 0, None)
+    powerup = AnimSprite(point, [images['missile_powerup']], (0, 0), 1, 'powerup', 0, None)
     powerup.collide = False
     sprites.append(powerup)
 
 
 class Sprite:
-    def __init__(self, coords: tuple, path: str, velocity: tuple, shot: str='bullet', direction: int=0):
+    def __init__(self, coords: tuple, path, velocity: tuple, shot: str='bullet', direction: int=0):
         self.x = coords[0]
         self.y = coords[1]
         self.vx = velocity[0]
         self.vy = velocity[1]
         self.facing = direction
-        self.image = pygame.image.load(path)
+        self.image = path
         self.size = self.image.get_rect().size
         self.die = False
         self.shot = shot
@@ -110,12 +123,25 @@ class Sprite:
         return self.x, self.size[0], self.y, self.size[1]
 
     def draw(self, move: bool=True):
-        # screen being display
-        # angle being amount
-        # W, H are from image.get_size()
-        # pos is the pivot point, so self.x + size[0] / 2, self.y + size[1] / 2
-        image = pygame.transform.rotate(self.image, self.facing)
-        display.blit(image, (self.x - self.size[0], self.y - self.size[1]))
+        if self.facing == 0:
+            display.blit(self.image, (self.x, self.y))
+        else:
+            # This solution was found on stackoverflow for image rotation on origin. Thanks Rabbid76!
+            w, h = self.size
+            box = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
+            box_rotate = [p.rotate(self.facing) for p in box]
+
+            min_box = (min(box_rotate, key=lambda p: p[0])[0], min(box_rotate, key=lambda p: p[1])[1])
+            max_box = (max(box_rotate, key=lambda p: p[0])[0], max(box_rotate, key=lambda p: p[1])[1])
+
+            pivot = pygame.math.Vector2(self.size[0] / 2, -self.size[1] / 2)
+            pivot_rotate = pivot.rotate(self.facing)
+            pivot_move = pivot_rotate - pivot
+
+            origin = (self.x + min_box[0] - pivot_move[0], self.y - max_box[1] + pivot_move[1])
+
+            rotated_image = pygame.transform.rotate(self.image, self.facing)
+            display.blit(rotated_image, origin)
         if move:
             self.move_forward()
 
@@ -183,16 +209,26 @@ class AnimSprite(Sprite):
         self.delay_count = 1
         self.friendly = friendly
 
-    def draw(self, move: bool=True):
-        image = pygame.image.load(self.frames[self.frame_count])
-        image = pygame.transform.rotate(image, self.facing)
-        # Debug collision rectangle
-        color = (255, 0, 0)
-        if self.friendly:
-            color = (0, 255, 0)
-        # pygame.draw.rect(display, color, pygame.Rect(self.x, self.y, -self.size[0], -self.size[1]))
-        # pygame.draw.rect(display, color, pygame.Rect(*self.bbox))
-        display.blit(image, (self.x - self.size[0], self.y - self.size[1]))
+    def draw(self, move: bool = True):
+        if self.facing == 0:
+            display.blit(self.image, (self.x, self.y))
+        else:
+            # This solution was found on stackoverflow for image rotation on origin. Thanks Rabbid76!
+            w, h = self.size
+            box = [pygame.math.Vector2(p) for p in [(0, 0), (w, 0), (w, -h), (0, -h)]]
+            box_rotate = [p.rotate(self.facing) for p in box]
+
+            min_box = (min(box_rotate, key=lambda p: p[0])[0], min(box_rotate, key=lambda p: p[1])[1])
+            max_box = (max(box_rotate, key=lambda p: p[0])[0], max(box_rotate, key=lambda p: p[1])[1])
+
+            pivot = pygame.math.Vector2(self.size[0] / 2, -self.size[1] / 2)
+            pivot_rotate = pivot.rotate(self.facing)
+            pivot_move = pivot_rotate - pivot
+
+            origin = (self.x + min_box[0] - pivot_move[0], self.y - max_box[1] + pivot_move[1])
+
+            rotated_image = pygame.transform.rotate(self.image, self.facing)
+            display.blit(rotated_image, origin)
         if move:
             self.move_forward()
 
@@ -203,18 +239,25 @@ class AnimSprite(Sprite):
             self.frame_count += 1
             if self.frame_count >= len(self.frames):  # Reset frames
                 self.frame_count = 0
-            image = pygame.image.load(self.frames[self.frame_count])
+            image = self.get_frame(self.frame_count)
             image = pygame.transform.rotate(image, self.facing)
             self.image = image
             self.delay_count = 0
 
         else:
-            image = pygame.transform.rotate(pygame.image.load(self.frames[self.frame_count]), self.facing)
+            image = pygame.transform.rotate(self.get_frame(self.frame_count), self.facing)
             self.image = image
             self.delay_count += 1
 
         display.blit(image, (self.x, self.y))
         self.move_forward()
+
+    def get_frame(self, i: int):
+        """Returns the frame with index integer value"""
+        try:
+            return self.frames[i]
+        except IndexError:
+            return None
 
     def nearest(self):
         sorted_sprites = sorted(sprites, key=lambda x: math.sqrt((self.x - x.x)**2 + (self.y - x.y)**2))
@@ -276,9 +319,9 @@ class Enemy(AnimSprite):
         self.shoot = 3 * FPS
         if mb is True:
             self.shoot *= 2
-            self.frames = ['images/ship_enemy_mb.png']
+            self.frames = [images['ship_enemy_mb']]
         else:
-            self.frames = ['images/ship_idle_enemy.png']
+            self.frames = [images['ship_enemy']]
         self.friendly = False
         self.shoot_counter = 0
         self.mb = mb
@@ -295,11 +338,11 @@ class Enemy(AnimSprite):
         self.shoot_counter += 1
 
     def fire(self):
-        new = Projectile((self.x, self.y), ['images/bullet_enemy.png'], (self.vx-4.5, self.vy-4.5), 1, 'bullet', self.facing, 2, False)
+        new = Projectile((self.x, self.y), [images['bullet_enemy']], (self.vx-4.5, self.vy-4.5), 1, 'bullet', self.facing, 2, False)
         sprites.append(new)
 
     def launch(self):
-        new = Projectile((self.x, self.y), ['images/ship_missile_enemy.png'], (-4.2, -4.2), 1, 'enemy_missile', self.facing, 12, False)
+        new = Projectile((self.x, self.y), [images['missile_enemy']], (-4.2, -4.2), 1, 'enemy_missile', self.facing, 12, False)
         sprites.append(new)
 
 
@@ -327,19 +370,19 @@ class Friendly(AnimSprite):
         self.shoot_counter += 1
 
     def fire(self):
-        new = Projectile((self.x, self.y), ['images/bullet.png'], (self.vx-4.5, self.vy-4.5), 1, 'bullet', self.facing, 2, True)
+        new = Projectile((self.x, self.y), [images['bullet']], (self.vx-4.5, self.vy-4.5), 1, 'bullet', self.facing, 2, True)
         sprites.append(new)
 
     def launch(self):
-        new = Projectile((self.x, self.y), ['images/ship_missile.png'], (-4.2, -4.2), 1, 'friendly_missile', self.facing, 12, True)
+        new = Projectile((self.x, self.y), [images['missile']], (-4.2, -4.2), 1, 'friendly_missile', self.facing, 12, True)
         sprites.append(new)
 
 
-player = AnimSprite(CENTER, ['images/ship_idle.png'], (0, 0), 1, 'player', 0)
+player = AnimSprite(CENTER, [images['ship']], (0, 0), 1, 'player', 0)
 
-missile1 = Sprite((size[0] - 100, 40), 'images/ship_missile.png', (0, 0))
-missile2 = Sprite((size[0] - 80, 40), 'images/ship_missile.png', (0, 0))
-missile3 = Sprite((size[0] - 60, 40), 'images/ship_missile.png', (0, 0))
+missile1 = Sprite((size[0] - 100, 40), images['missile'], (0, 0))
+missile2 = Sprite((size[0] - 80, 40), images['missile'], (0, 0))
+missile3 = Sprite((size[0] - 60, 40), images['missile'], (0, 0))
 missile1.collide = False
 missile2.collide = False
 missile3.collide = False
@@ -406,15 +449,16 @@ while not closed:
                     shoot_sound = pygame.mixer.Sound('sounds/shoot.wav')
                     shoot_sound.set_volume(0.5)
                     shoot_sound.play()
-                    new = Projectile((player.x, player.y), ['images/ship_missile.png'], (-4.2, -4.2), 1, 'missile', player.facing, 12, True)
+                    origin = player.x + player.size[0] / 2, player.y + player.size[1] / 2
+                    new = Projectile(origin, [images['missile']], (-4.2, -4.2), 1, 'missile', player.facing, 12, True)
                     sprites.append(new)
                     missiles -= 1
 
                 if event.key == pygame.K_SPACE:
                     shoot_sound = pygame.mixer.Sound('sounds/shoot.wav')
                     shoot_sound.play()
-                    origin = (player.x - player.size[0] / 2, player.y - player.size[1] / 2)
-                    new = Projectile(origin, ['images/bullet.png'], (player.vx -5.5, player.vy-5.5), 1, 'bullet', player.facing, 2, True)
+                    origin = (player.x + player.size[0] / 2, player.y + player.size[1] / 2)
+                    new = Projectile(origin, [images['bullet']], (player.vx - 5.5, player.vy - 5.5), 1, 'bullet', player.facing, 2, True)
                     sprites.append(new)
 
         if event.type == pygame.KEYUP:
@@ -495,6 +539,8 @@ while not closed:
         if not end:
             death = pygame.mixer.Sound('sounds/explode1.wav')
             death.play()
+        player.x += 1
+        player.y += 1
         end = True
         if score_counter < score:
             score_counter += 1111
@@ -507,30 +553,28 @@ while not closed:
         rect1 = game_over_text1.get_rect(center=(CENTER[0], CENTER[1] - 100))
         rect2 = game_over_text2.get_rect(center=CENTER)
         rect3 = game_over_text3.get_rect(center=(CENTER[0], CENTER[1] + 100))
-        display.blit(game_over_text1, rect1)
-        display.blit(game_over_text2, rect2)
-        display.blit(game_over_text3, rect3)
 
         if sprites:
             for index, sprite in enumerate(sprites):
-                if sprite.shot != 'player':
-                    if sprite.collide is True:
-                        for other_index, other_sprite in enumerate(sprites):
-                            if other_index != index:
-                                if within(other_sprite.bbox, sprite.bbox) and (sprite.friendly is not other_sprite.friendly):
-                                    sprite.die = True
-                                    other_sprite.die = True
+                if sprite.shot != 'player' and sprite.collide is True:
+                    for other_index, other_sprite in enumerate(sprites):
+                        if other_index != index:
+                            if within(other_sprite.bbox, sprite.bbox) and (sprite.friendly is not other_sprite.friendly):
+                                sprite.die = True
+                                other_sprite.die = True
+                elif sprite.shot != 'bullet':
+                    sprite.gradual_face(sprite.nearest())
                 sprite.draw()
-                sprite_num = len(sprites)
-                if sprite_num - index < 0:
-                    sprite.gradual_face(sprites[sprite_num + index])
-                elif sprite_num + index > sprite_num:
-                    sprite.gradual_face(sprites[sprite_num - index])
 
                 if sprite.die is True:
                     sprites.pop(index)
 
-    display.blit(score_text, (40, 80))
-    display.blit(wave_text, (40, 40))
+        display.blit(game_over_text1, rect1)
+        display.blit(game_over_text2, rect2)
+        display.blit(game_over_text3, rect3)
+
+    else:
+        display.blit(score_text, (40, 80))
+        display.blit(wave_text, (40, 40))
 
     clock.tick(FPS)
